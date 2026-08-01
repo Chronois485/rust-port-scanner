@@ -1,10 +1,14 @@
 pub mod tcp;
 
+use tokio::time::Duration;
+
+pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
+
 #[derive(Debug)]
 pub enum PortStatus {
     Open,
     Closed,
-    Filtered,
+    Timeout,
 }
 
 pub struct Port {
