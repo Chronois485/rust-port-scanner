@@ -43,10 +43,9 @@ pub async fn scan_ports(target: &str, ports: &[u16]) -> ScanResult {
     };
 
     for &port in ports {
-        scan_result.ports.push(Port {
-            number: port,
-            status: tcp::connect_to_port(target, port).await,
-        });
+        scan_result
+            .ports
+            .push(tcp::connect_to_port(target, port).await);
     }
 
     scan_result
