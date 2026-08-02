@@ -8,7 +8,7 @@ use tokio::{sync::Semaphore, time::Duration};
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PortStatus {
     Open,
     Closed,
