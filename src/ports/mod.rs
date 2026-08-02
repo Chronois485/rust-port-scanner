@@ -4,8 +4,8 @@ pub mod parser;
 
 #[derive(Debug)]
 pub enum ParsePortError {
-    InvalidPort,
-    InvalidRange,
+    InvalidPort(String),
+    InvalidRange(u16, u16),
     EmptyInput,
 }
 
@@ -16,12 +16,12 @@ impl Display for ParsePortError {
                 write!(f, "Empty input")
             }
 
-            ParsePortError::InvalidPort => {
-                write!(f, "Invalid port")
+            ParsePortError::InvalidPort(port) => {
+                write!(f, "Invalid port: {}", port)
             }
 
-            ParsePortError::InvalidRange => {
-                write!(f, "Invalid range")
+            ParsePortError::InvalidRange(start, end) => {
+                write!(f, "Invalid range: {}-{}", start, end)
             }
         }
     }

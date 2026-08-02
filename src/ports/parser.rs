@@ -15,7 +15,7 @@ pub fn parse_ports(ports: &str) -> Result<Vec<u16>, ParsePortError> {
             let end = parse_port(end_str)?;
 
             if start > end {
-                return Err(ParsePortError::InvalidRange);
+                return Err(ParsePortError::InvalidRange(start, end));
             }
 
             result.extend(start..=end);
@@ -27,5 +27,6 @@ pub fn parse_ports(ports: &str) -> Result<Vec<u16>, ParsePortError> {
 }
 
 fn parse_port(port: &str) -> Result<u16, ParsePortError> {
-    port.parse::<u16>().map_err(|_| ParsePortError::InvalidPort)
+    port.parse::<u16>()
+        .map_err(|_| ParsePortError::InvalidPort(port.to_string()))
 }

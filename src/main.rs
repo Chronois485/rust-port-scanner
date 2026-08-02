@@ -14,7 +14,7 @@ async fn main() {
     let ports = match parser::parse_ports(&ports) {
         Ok(ports) => ports,
         Err(e) => {
-            eprintln!("{e}");
+            eprintln!("Error: {e}");
             std::process::exit(1);
         }
     };
