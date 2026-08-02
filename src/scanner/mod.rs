@@ -1,10 +1,10 @@
 pub mod tcp;
 
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use colored::Colorize;
 use futures::future::join_all;
-use tokio::time::Duration;
+use tokio::{sync::Semaphore, time::Duration};
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
 
@@ -37,8 +37,17 @@ pub struct ScanResult {
     pub ports: Vec<Port>,
 }
 
-pub async fn scan_ports(target: &str, ports: &[u16]) -> ScanResult {
-    let scans = ports.iter().map(|&port| tcp::connect_to_port(target, port));
+pub async fn scan_ports(target: &str, ports: &[u16], concurrency: u16) -> ScanResult {
+    let semaphore = Arc::new(Semaphore::new(concurrency as usize));
+
+    let scans = ports.iter().map(|&port| {
+        let semaphore = semaphore.clone();
+        async move {
+            let _permit = semaphore.acquire_owned().await.unwrap();
+
+            tcp::connect_to_port(target, port).await
+        }
+    });
 
     let ports = join_all(scans).await;
 
