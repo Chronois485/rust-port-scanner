@@ -3,6 +3,8 @@ mod output;
 mod ports;
 mod scanner;
 
+use std::time::Instant;
+
 use clap::Parser;
 use cli::args::Args;
 use ports::parser;
@@ -18,6 +20,7 @@ async fn main() {
             std::process::exit(1);
         }
     };
+    let start = Instant::now();
     let scan = scanner::scan_ports(&args.target, ports.as_slice(), args.concurrency).await;
-    output::printer::print_scan_result(&scan, args.verbose);
+    output::printer::print_scan_result(&scan, args.verbose, start.elapsed());
 }
