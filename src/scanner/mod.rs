@@ -3,6 +3,7 @@ pub mod tcp;
 use std::fmt::Display;
 
 use colored::Colorize;
+use futures::future::join_all;
 use tokio::time::Duration;
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
@@ -37,16 +38,12 @@ pub struct ScanResult {
 }
 
 pub async fn scan_ports(target: &str, ports: &[u16]) -> ScanResult {
-    let mut scan_result = ScanResult {
+    let scans = ports.iter().map(|&port| tcp::connect_to_port(target, port));
+
+    let ports = join_all(scans).await;
+
+    ScanResult {
         target: target.to_string(),
-        ports: Vec::with_capacity(ports.len()),
-    };
-
-    for &port in ports {
-        scan_result
-            .ports
-            .push(tcp::connect_to_port(target, port).await);
+        ports,
     }
-
-    scan_result
 }
