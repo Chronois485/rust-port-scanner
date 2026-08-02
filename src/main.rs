@@ -1,4 +1,5 @@
 mod cli;
+mod output;
 mod ports;
 mod scanner;
 
@@ -9,7 +10,6 @@ use ports::parser;
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    println!("{:#?}", args);
     let ports = parser::parse_ports(
         match args.ports {
             Some(p) => p,
@@ -20,5 +20,5 @@ async fn main() {
     let error = ports.unwrap(); // FIX LATER
     let ports = error.as_slice();
     let scan = scanner::scan_ports(&args.target, ports).await;
-    println!("{:#?}", scan)
+    output::printer::print_scan_result(&scan);
 }

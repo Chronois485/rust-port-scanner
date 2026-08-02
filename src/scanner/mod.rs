@@ -1,5 +1,8 @@
 pub mod tcp;
 
+use std::fmt::Display;
+
+use colored::Colorize;
 use tokio::time::Duration;
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
@@ -9,6 +12,16 @@ pub enum PortStatus {
     Open,
     Closed,
     Timeout,
+}
+
+impl Display for PortStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PortStatus::Open => write!(f, "{}", "OPEN".green()),
+            PortStatus::Closed => write!(f, "{}", "CLOSED".red()),
+            PortStatus::Timeout => write!(f, "{}", "TIMEOUT".yellow()),
+        }
+    }
 }
 
 #[derive(Debug)]
