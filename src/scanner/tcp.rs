@@ -1,9 +1,10 @@
-use super::{Port, PortStatus, TIMEOUT_TIME};
+use super::{ConnectResult, TIMEOUT_TIME};
 
 use tokio::net::TcpSocket;
+
 use tokio::time::timeout;
 
-pub async fn connect_to_port(target: &str, port: u16) -> Port {
+pub async fn connect_to_port(target: &str, port: u16) -> ConnectResult {
     let socket = TcpSocket::new_v4().unwrap();
 
     let stream = timeout(
@@ -12,14 +13,9 @@ pub async fn connect_to_port(target: &str, port: u16) -> Port {
     )
     .await;
 
-    let status = match stream {
-        Err(_) => PortStatus::Timeout,
-        Ok(Err(_)) => PortStatus::Closed,
-        Ok(_) => PortStatus::Open,
-    };
-
-    Port {
-        number: port,
-        status,
+    match stream {
+        Ok(Ok(s)) => ConnectResult::Connected(s),
+        Err(_) => ConnectResult::Timeout,
+        Ok(Err(_)) => ConnectResult::Closed,
     }
 }

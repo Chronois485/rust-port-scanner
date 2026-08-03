@@ -1,12 +1,19 @@
+pub mod banner;
 pub mod tcp;
 
 use std::{fmt::Display, sync::Arc};
 
 use colored::Colorize;
 use futures::future::join_all;
-use tokio::{sync::Semaphore, time::Duration};
+use tokio::{net::TcpStream, sync::Semaphore, time::Duration};
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
+
+pub enum ConnectResult {
+    Connected(TcpStream),
+    Closed,
+    Timeout,
+}
 
 #[derive(Debug, PartialEq)]
 pub enum PortStatus {
@@ -29,6 +36,7 @@ impl Display for PortStatus {
 pub struct Port {
     pub number: u16,
     pub status: PortStatus,
+    pub banner: Option<String>,
 }
 
 #[derive(Debug)]
@@ -49,7 +57,29 @@ pub async fn scan_ports(target: &str, ports: &[u16], concurrency: u16) -> ScanRe
         }
     });
 
-    let ports = join_all(scans).await;
+    let connection_results = join_all(scans).await;
+
+    let mut ports = vec![];
+
+    for (i, result) in connection_results.iter().enumerate() {
+        match result {
+            ConnectResult::Closed => ports.push(Port {
+                number: i as u16,
+                status: PortStatus::Closed,
+                banner: None,
+            }),
+            ConnectResult::Timeout => ports.push(Port {
+                number: i as u16,
+                status: PortStatus::Timeout,
+                banner: None,
+            }),
+            ConnectResult::Connected(stream) => ports.push(Port {
+                number: i as u16,
+                status: PortStatus::Open,
+                banner: banner::grab(stream),
+            }),
+        }
+    }
 
     ScanResult {
         target: target.to_string(),
