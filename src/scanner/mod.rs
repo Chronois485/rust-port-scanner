@@ -25,9 +25,9 @@ pub enum PortStatus {
 impl Display for PortStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PortStatus::Open => write!(f, "{}", "OPEN".green()),
-            PortStatus::Closed => write!(f, "{}", "CLOSED".red()),
-            PortStatus::Timeout => write!(f, "{}", "TIMEOUT".yellow()),
+            PortStatus::Open => write!(f, "OPEN"),
+            PortStatus::Closed => write!(f, "CLOSED"),
+            PortStatus::Timeout => write!(f, "TIMEOUT"),
         }
     }
 }
@@ -48,38 +48,35 @@ pub struct ScanResult {
 pub async fn scan_ports(target: &str, ports: &[u16], concurrency: u16) -> ScanResult {
     let semaphore = Arc::new(Semaphore::new(concurrency as usize));
 
-    let scans = ports.iter().map(|&port| {
-        let semaphore = semaphore.clone();
+    let scans = ports.iter().copied().map(|port| {
+        let semaphore = Arc::clone(&semaphore);
+
         async move {
             let _permit = semaphore.acquire_owned().await.unwrap();
 
-            tcp::connect_to_port(target, port).await
+            match tcp::connect_to_port(target, port).await {
+                ConnectResult::Connected(mut stream) => Port {
+                    number: port,
+                    status: PortStatus::Open,
+                    banner: banner::grab(&mut stream).await,
+                },
+
+                ConnectResult::Closed => Port {
+                    number: port,
+                    status: PortStatus::Closed,
+                    banner: None,
+                },
+
+                ConnectResult::Timeout => Port {
+                    number: port,
+                    status: PortStatus::Timeout,
+                    banner: None,
+                },
+            }
         }
     });
 
-    let connection_results = join_all(scans).await;
-
-    let mut ports = vec![];
-
-    for (i, result) in connection_results.iter().enumerate() {
-        match result {
-            ConnectResult::Closed => ports.push(Port {
-                number: i as u16,
-                status: PortStatus::Closed,
-                banner: None,
-            }),
-            ConnectResult::Timeout => ports.push(Port {
-                number: i as u16,
-                status: PortStatus::Timeout,
-                banner: None,
-            }),
-            ConnectResult::Connected(stream) => ports.push(Port {
-                number: i as u16,
-                status: PortStatus::Open,
-                banner: banner::grab(stream),
-            }),
-        }
-    }
+    let ports = join_all(scans).await;
 
     ScanResult {
         target: target.to_string(),

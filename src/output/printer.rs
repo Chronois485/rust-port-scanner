@@ -5,7 +5,12 @@ use colored::Colorize;
 
 pub fn print_scan_result(result: &ScanResult, verbose: bool, time_passed: Duration) {
     println!("{}\n", format!("Target: {}", result.target).cyan());
-    println!("{:<6} : {:<8}", "PORT".cyan(), "STATUS".cyan());
+    println!(
+        "{:<6} : {:<8} : {:<15}",
+        "PORT".cyan(),
+        "STATUS".cyan(),
+        "BANNER".cyan()
+    );
     let mut closed = 0;
     let mut opened = 0;
     let mut timedout = 0;
@@ -44,9 +49,19 @@ pub fn print_scan_result(result: &ScanResult, verbose: bool, time_passed: Durati
 }
 
 fn print_port(port: &Port) {
+    let status = match port.status {
+        PortStatus::Open => format!("{:<8}", port.status).green(),
+        PortStatus::Closed => format!("{:<8}", port.status).red(),
+        PortStatus::Timeout => format!("{:<8}", port.status).yellow(),
+    };
+
     println!(
-        "{:<6} : {:<8}",
+        "{:<6} : {} : {}",
         format!("{}", port.number).blue(),
-        port.status
+        status,
+        match &port.banner {
+            Some(banner) => banner,
+            None => "",
+        }
     )
 }

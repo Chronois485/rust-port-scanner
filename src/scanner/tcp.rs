@@ -7,7 +7,7 @@ use tokio::time::timeout;
 pub async fn connect_to_port(target: &str, port: u16) -> ConnectResult {
     let socket = TcpSocket::new_v4().unwrap();
 
-    let stream = timeout(
+    let mut stream = timeout(
         TIMEOUT_TIME,
         socket.connect(format!("{target}:{port}").parse().unwrap()),
     )
