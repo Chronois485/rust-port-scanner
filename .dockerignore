@@ -1,4 +1,3 @@
 /.git
 /target
 /*.log
-/Cargo.lock

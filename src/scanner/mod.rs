@@ -1,10 +1,8 @@
 pub mod banner;
 pub mod tcp;
 
-use std::{fmt::Display, sync::Arc};
-
-use colored::Colorize;
 use futures::future::join_all;
+use std::{fmt::Display, sync::Arc};
 use tokio::{net::TcpStream, sync::Semaphore, time::Duration};
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
