@@ -20,7 +20,6 @@ async fn main() {
             std::process::exit(1);
         }
     };
-    let start = Instant::now();
     let scan = scanner::scan_ports(&args.target, ports.as_slice(), args.concurrency).await;
-    output::printer::print_scan_result(&scan, args.verbose, start.elapsed());
+    output::printer::print_scan_result(&scan, args.verbose);
 }

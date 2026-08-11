@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::scanner::{Port, PortStatus, ScanResult};
 use colored::Colorize;
 
-pub fn print_scan_result(result: &ScanResult, verbose: bool, time_passed: Duration) {
+pub fn print_scan_result(result: &ScanResult, verbose: bool) {
     println!("{}\n", format!("Target: {}", result.target).cyan());
     println!(
         "{:<6} : {:<8} : {:<15}",
@@ -42,7 +42,7 @@ pub fn print_scan_result(result: &ScanResult, verbose: bool, time_passed: Durati
             opened,
             closed,
             timedout,
-            time_passed.as_secs_f64()
+            result.elapsed.as_secs_f64()
         )
         .magenta(),
     )

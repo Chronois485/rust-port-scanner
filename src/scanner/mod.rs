@@ -2,7 +2,7 @@ pub mod banner;
 pub mod tcp;
 
 use futures::future::join_all;
-use std::{fmt::Display, sync::Arc};
+use std::{fmt::Display, sync::Arc, time::Instant};
 use tokio::{net::TcpStream, sync::Semaphore, time::Duration};
 
 pub const TIMEOUT_TIME: Duration = Duration::from_secs(5);
@@ -41,10 +41,26 @@ pub struct Port {
 pub struct ScanResult {
     pub target: String,
     pub ports: Vec<Port>,
+    pub elapsed: Duration,
+}
+
+pub struct ScanStats {
+    pub scanend: usize,
+    pub open: usize,
+    pub closed: usize,
+    pub timeout: usize,
 }
 
 pub async fn scan_ports(target: &str, ports: &[u16], concurrency: u16) -> ScanResult {
+    let start = Instant::now();
     let semaphore = Arc::new(Semaphore::new(concurrency as usize));
+
+    let mut scan_stats = ScanStats {
+        scanend: ports.len(),
+        open: 0,
+        closed: 0,
+        timeout: 0,
+    };
 
     let scans = ports.iter().copied().map(|port| {
         let semaphore = Arc::clone(&semaphore);
@@ -53,23 +69,32 @@ pub async fn scan_ports(target: &str, ports: &[u16], concurrency: u16) -> ScanRe
             let _permit = semaphore.acquire_owned().await.unwrap();
 
             match tcp::connect_to_port(target, port).await {
-                ConnectResult::Connected(mut stream) => Port {
-                    number: port,
-                    status: PortStatus::Open,
-                    banner: banner::grab(&mut stream).await,
-                },
+                ConnectResult::Connected(mut stream) => {
+                    scan_stats.open += 1;
+                    Port {
+                        number: port,
+                        status: PortStatus::Open,
+                        banner: banner::grab(&mut stream).await,
+                    }
+                }
 
-                ConnectResult::Closed => Port {
-                    number: port,
-                    status: PortStatus::Closed,
-                    banner: None,
-                },
+                ConnectResult::Closed => {
+                    scan_stats.closed += 1;
+                    Port {
+                        number: port,
+                        status: PortStatus::Closed,
+                        banner: None,
+                    }
+                }
 
-                ConnectResult::Timeout => Port {
-                    number: port,
-                    status: PortStatus::Timeout,
-                    banner: None,
-                },
+                ConnectResult::Timeout => {
+                    scan_stats.timeout += 1;
+                    Port {
+                        number: port,
+                        status: PortStatus::Timeout,
+                        banner: None,
+                    }
+                }
             }
         }
     });
@@ -79,5 +104,6 @@ pub async fn scan_ports(target: &str, ports: &[u16], concurrency: u16) -> ScanRe
     ScanResult {
         target: target.to_string(),
         ports,
+        elapsed: start.elapsed(),
     }
 }
